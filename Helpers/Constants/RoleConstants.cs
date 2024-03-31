@@ -4,5 +4,6 @@
     {
         public const string ENDUSER = "ENDUSER";
         public const string ADMIN = "ADMIN";
+        public const string SUPERADMIN = "SUPERADMIN";
     }
 }

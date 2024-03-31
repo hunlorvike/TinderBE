@@ -1,4 +1,6 @@
 using Tinder_Admin.Helpers.Constants;
+using Tinder_Admin.Services;
+using Tinder_Admin.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls(AppConstants.URL);
@@ -18,6 +20,9 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty;
     });
 }
+
+// Dependency Injection
+builder.Services.AddScoped<IJWTService, JWTService>();
 
 app.UseHttpsRedirection();
 

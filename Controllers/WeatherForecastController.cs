@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Tinder_Admin.Models;
 
 namespace Tinder_Admin.Controllers
 {

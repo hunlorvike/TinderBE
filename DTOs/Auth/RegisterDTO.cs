@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Tinder_Admin.DTOs
+namespace Tinder_Admin.DTOs.Auth
 {
     public class RegisterDTO
     {

@@ -1,4 +1,4 @@
-namespace Tinder_Admin
+namespace Tinder_Admin.Models
 {
     public class WeatherForecast
     {
