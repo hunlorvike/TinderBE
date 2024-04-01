@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -173,5 +175,143 @@ namespace Tinder_Admin.Controllers
             return Ok(new { token = newToken });
         }
 
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(
+             [FromQuery(Name = "userId")] string userId,
+             [FromQuery(Name = "token")] string token)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Invalid email confirmation link.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                return BadRequest("User not found.");
+            }
+
+            var decodedToken = WebEncoders.Base64UrlDecode(token);
+            var decodedTokenString = Encoding.UTF8.GetString(decodedToken);
+
+            var result = await _userManager.ConfirmEmailAsync(user, decodedTokenString);
+
+            if (result.Succeeded)
+            {
+                user.Enabled = true;
+                await _userManager.UpdateAsync(user);
+
+                return Ok("Email confirmed successfully. You can now login.");
+            }
+            else
+            {
+                return BadRequest("Email confirmation failed. Please try again.");
+            }
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDTO model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest("User not found.");
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+            var confirmUrl = $"{AppConstants.URL}/forgot-password?email={model.Email}&token={encodedToken}";
+
+            string body = string.Empty;
+            var htmlFilePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Helpers/Htmls/send_mail.html");
+            using (StreamReader reader = new StreamReader(htmlFilePath))
+            {
+                body = reader.ReadToEnd();
+            }
+
+            body = body.Replace("{redirectVerify}", confirmUrl);
+            body = body.Replace("{UserName}", model.Email);
+
+            bool isSendEmail = EmailHelper.SendVerifyEmail(model.Email ?? "", "Confirm your account", body, true);
+
+            if (isSendEmail)
+            {
+                return Ok("Verification email sent successfully.");
+            }
+            else
+            {
+                return BadRequest("Failed to send verification email.");
+            }
+
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDTO model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest("User not found.");
+            }
+
+            var token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
+            var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                return Ok("Password reset successfully.");
+            }
+            else
+            {
+                return BadRequest("Password reset failed.");
+            }
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest("User not found.");
+            }
+
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+            if (result.Succeeded)
+            {
+                return Ok("Password changed successfully.");
+            }
+            else
+            {
+                return BadRequest(result.Errors);
+            }
+        }
+
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok("Logged out successfully.");
+
+        }
     }
 }
