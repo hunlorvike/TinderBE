@@ -70,8 +70,8 @@ namespace Tinder_Admin.Controllers
             }
 
             return BadRequest("Invalid username or password.");
-
         }
+
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO model)
@@ -97,7 +97,7 @@ namespace Tinder_Admin.Controllers
                 var confirmEmailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 confirmEmailToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(confirmEmailToken));
 
-                var confirmUrl = $"{AppConstants.URL}/confirm-email?userId={user.Id}&token={confirmEmailToken}";
+                var confirmUrl = $"{AppConstants.URL}/api/auth/confirm-email?userId={user.Id}&token={confirmEmailToken}";
                 string body = string.Empty;
                 var htmlFilePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Helpers/Htmls/send_mail.html");
                 using (StreamReader reader = new StreamReader(htmlFilePath))
@@ -122,8 +122,6 @@ namespace Tinder_Admin.Controllers
 
             return BadRequest(result.Errors);
         }
-
-
 
         [Authorize(Roles = RoleConstants.SUPERADMIN)]
         [HttpPost("super-admin-register")]
@@ -153,13 +151,9 @@ namespace Tinder_Admin.Controllers
         }
 
         [HttpPost("refresh-token")]
+        [Authorize]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDTO model)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var principal = _jwtService.ValidateJWTTokenAsync(model.Token);
             if (principal == null)
             {
@@ -227,7 +221,7 @@ namespace Tinder_Admin.Controllers
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-            var confirmUrl = $"{AppConstants.URL}/forgot-password?email={model.Email}&token={encodedToken}";
+            var confirmUrl = $"{AppConstants.URL}/api/auth/forgot-password?email={model.Email}&token={encodedToken}";
 
             string body = string.Empty;
             var htmlFilePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Helpers/Htmls/send_mail.html");

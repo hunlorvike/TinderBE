@@ -1,15 +1,17 @@
 version: '3.8'
 
 services:
-  postgres:
-    container_name: pg-tinder
-    image: postgres:latest
+  mssql:
+    container_name: mssql-server
+    image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
-      POSTGRES_DB: TinderCoreDB
-      POSTGRES_USER: user_tinder
-      POSTGRES_PASSWORD: pass_tinder
+      SA_PASSWORD: TinderPassword
+      ACCEPT_EULA: Y
     ports:
-      - "1952:2591"
-    security_opt:
-      - seccomp:unconfined
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
     restart: always
+
+volumes:
+  mssql-data:
